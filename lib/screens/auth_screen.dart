@@ -148,9 +148,7 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   String? _validateWebsite(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'يرجى إدخال رابط الموقع الإلكتروني';
-    }
+    if (value == null || value.trim().isEmpty) return null;
     final uri = Uri.tryParse(
       value.trim().contains('://') ? value.trim() : 'https://${value.trim()}',
     );
@@ -323,7 +321,7 @@ class _AuthScreenState extends State<AuthScreen>
                       keyboardType: TextInputType.url,
                       textDirection: TextDirection.ltr,
                       decoration: const InputDecoration(
-                        hintText: 'رابط الموقع الإلكتروني',
+                        hintText: 'رابط الموقع الإلكتروني (اختياري)',
                         prefixIcon: Icon(Icons.language),
                       ),
                       validator: _validateWebsite,

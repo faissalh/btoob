@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
+import '../data/mock_data.dart';
+import '../l10n/post_card_localizations.dart';
 import '../models/purchase_request.dart';
-import 'account_avatar.dart';
-import 'post_media_thumbnail.dart';
+import '../theme/app_theme.dart';
+import 'post_card.dart';
 
 class RequestCard extends StatelessWidget {
   final PurchaseRequest request;
@@ -23,201 +24,72 @@ class RequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? AppColors.darkPanel : AppColors.panel;
-    final borderColor = isDark ? AppColors.darkLine : AppColors.line;
-    final mutedColor = isDark ? AppColors.darkMuted : AppColors.muted;
-    final fgColor = isDark ? AppColors.darkFg : AppColors.fg;
+    final localizations = postCardLocalizations(context);
+    final company = MockData.getCompanyByName(request.buyerName);
+    final isOpen = request.status == 'مفتوح';
+    final statusLabel = isOpen
+        ? localizations.openRequest
+        : request.status == 'مغلق'
+        ? localizations.closedRequest
+        : request.status;
+    final mutedColor = Theme.of(context).brightness == Brightness.dark
+        ? AppColors.darkMuted
+        : AppColors.muted;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(AppTheme.radius),
-          border: Border.all(color: borderColor),
-          boxShadow: isDark ? AppTheme.softShadowDark : AppTheme.softShadow,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (request.imageBase64.isNotEmpty)
-              LayoutBuilder(
-                builder: (context, constraints) => Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    PostMediaThumbnail(
-                      key: ValueKey('request-media-${request.id}'),
-                      images: request.imageBase64,
-                      width: constraints.maxWidth * 0.34,
-                      height: 112,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(child: _header(mutedColor, isDark)),
-                  ],
-                ),
-              )
-            else
-              _header(mutedColor, isDark),
-            const SizedBox(height: 12),
-            Text(
-              request.title,
-              style: TextStyle(
-                color: fgColor,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                height: 1.4,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                AccountAvatar(
-                  key: ValueKey('request-avatar-${request.id}'),
-                  name: request.buyerName,
-                  avatarBase64: avatarBase64,
-                  role: ownerRole,
-                  size: 30,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    '${request.buyerName} · ${request.contactPerson}',
-                    style: TextStyle(color: mutedColor, fontSize: 12),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.inventory_2_outlined, size: 14, color: mutedColor),
-                const SizedBox(width: 4),
-                Text(
-                  request.quantity,
-                  style: TextStyle(color: mutedColor, fontSize: 12),
-                ),
-                const SizedBox(width: 16),
-                Icon(Icons.location_on_outlined, size: 14, color: mutedColor),
-                const SizedBox(width: 4),
-                Text(
-                  request.location,
-                  style: TextStyle(color: mutedColor, fontSize: 12),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(
-                  Icons.payments_outlined,
-                  size: 14,
-                  color: AppColors.green,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    request.budget,
-                    style: const TextStyle(
-                      color: AppColors.green,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (request.deadline != null) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.schedule, size: 14, color: AppColors.amber),
-                  const SizedBox(width: 6),
-                  Text(
-                    'آخر موعد: ${request.deadline}',
-                    style: const TextStyle(
-                      color: AppColors.amber,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _header(Color mutedColor, bool isDark) {
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 6,
-      runSpacing: 4,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: request.status == 'مفتوح'
-                ? AppColors.green.withValues(alpha: 0.12)
-                : AppColors.red.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: request.status == 'مفتوح'
-                      ? AppColors.green
-                      : AppColors.red,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                request.status,
-                style: TextStyle(
-                  color: request.status == 'مفتوح'
-                      ? AppColors.green
-                      : AppColors.red,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
+    return PostCard(
+      id: 'request-${request.id}',
+      title: request.title,
+      publisherName: request.buyerName,
+      ownerRole: ownerRole,
+      avatarBase64: avatarBase64,
+      avatarKey: ValueKey('request-avatar-${request.id}'),
+      rating: company?.rating,
+      isVerified: company?.isVerified ?? false,
+      images: request.imageBase64,
+      onDelete: onDelete,
+      deleteKey: ValueKey('delete-request-${request.id}'),
+      deleteTooltip: localizations.deleteRequest,
+      primaryText: request.budget,
+      primaryIcon: Icons.payments_outlined,
+      description: request.description,
+      secondaryText: localizations.requestQuantity(request.quantity),
+      additionalDetails: [
+        PostStatusBadge(label: statusLabel, isOpen: isOpen),
         if (request.category != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkPanel2 : AppColors.bg2,
-              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            ),
-            child: Text(
-              request.category!,
-              style: TextStyle(color: mutedColor, fontSize: 11),
-            ),
-          ),
-        if (onDelete != null)
-          IconButton(
-            key: ValueKey('delete-request-${request.id}'),
-            tooltip: 'حذف طلب الشراء',
-            onPressed: onDelete,
-            visualDensity: VisualDensity.compact,
-            constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-            padding: EdgeInsets.zero,
-            icon: const Icon(Icons.delete_outline, color: AppColors.red),
+          _RequestCategoryLabel(category: request.category!, color: mutedColor),
+        PostDetailLabel(
+          icon: Icons.person_outline,
+          text: request.contactPerson,
+        ),
+        PostDetailLabel(
+          icon: Icons.location_on_outlined,
+          text: request.location,
+        ),
+        if (request.deadline != null)
+          PostDetailLabel(
+            icon: Icons.schedule,
+            text: localizations.requestDeadline(request.deadline!),
+            color: AppColors.amber,
           ),
       ],
+      onTap: onTap,
     );
   }
+}
+
+class _RequestCategoryLabel extends StatelessWidget {
+  final String category;
+  final Color color;
+
+  const _RequestCategoryLabel({required this.category, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsetsDirectional.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+    ),
+    child: Text(category, style: TextStyle(color: color, fontSize: 11)),
+  );
 }

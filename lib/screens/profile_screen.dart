@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/post_card_localizations.dart';
 import '../models/user_profile.dart';
 import '../theme/app_theme.dart';
 import 'auth_screen.dart';
@@ -9,6 +10,8 @@ import '../widgets/account_avatar.dart';
 class ProfileScreen extends StatefulWidget {
   final bool isDarkMode;
   final ValueChanged<bool> onDarkModeToggle;
+  final Locale? locale;
+  final ValueChanged<Locale>? onLocaleChanged;
   final bool isLoggedIn;
   final Future<void> Function() onLogin;
   final Future<void> Function() onLogout;
@@ -25,6 +28,8 @@ class ProfileScreen extends StatefulWidget {
     super.key,
     required this.isDarkMode,
     required this.onDarkModeToggle,
+    this.locale,
+    this.onLocaleChanged,
     required this.isLoggedIn,
     required this.onLogin,
     required this.onLogout,
@@ -106,6 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = postCardLocalizations(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? AppColors.darkPanel : AppColors.panel;
     final borderColor = isDark ? AppColors.darkLine : AppColors.line;
@@ -257,7 +263,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   activeThumbColor: AppColors.accent,
                 ),
                 Divider(height: 1, color: borderColor),
-                _tile(Icons.language, 'اللغة', 'العربية', fgColor, mutedColor),
+                PopupMenuButton<Locale>(
+                  tooltip: localizations.languageLabel,
+                  onSelected: widget.onLocaleChanged,
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: const Locale('ar'),
+                      child: Text(localizations.arabicLanguageName),
+                    ),
+                    PopupMenuItem(
+                      value: const Locale('en'),
+                      child: Text(localizations.englishLanguageName),
+                    ),
+                  ],
+                  child: ListTile(
+                    leading: Icon(Icons.language, color: mutedColor, size: 22),
+                    title: Text(
+                      localizations.languageLabel,
+                      style: TextStyle(
+                        color: fgColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      (widget.locale ?? Localizations.localeOf(context))
+                                  .languageCode ==
+                              'en'
+                          ? localizations.englishLanguageName
+                          : localizations.arabicLanguageName,
+                      style: TextStyle(color: mutedColor, fontSize: 12),
+                    ),
+                    trailing: Icon(
+                      Icons.arrow_back_ios,
+                      size: 14,
+                      color: mutedColor,
+                    ),
+                  ),
+                ),
                 Divider(height: 1, color: borderColor),
                 _tile(
                   Icons.notifications_outlined,

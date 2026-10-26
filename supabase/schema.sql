@@ -25,6 +25,7 @@ create table if not exists public.offers (
   min_order text,
   category text not null,
   countries text[] not null default '{}',
+  places jsonb not null default '{}'::jsonb,
   company_name text not null,
   description text,
   details text,
@@ -33,6 +34,9 @@ create table if not exists public.offers (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.offers
+  add column if not exists places jsonb not null default '{}'::jsonb;
 
 create table if not exists public.purchase_requests (
   id text primary key default gen_random_uuid()::text,
@@ -46,6 +50,7 @@ create table if not exists public.purchase_requests (
   budget text not null,
   country text not null,
   city text not null,
+  places jsonb not null default '{}'::jsonb,
   description text,
   deadline date,
   category text,
@@ -53,6 +58,9 @@ create table if not exists public.purchase_requests (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.purchase_requests
+  add column if not exists places jsonb not null default '{}'::jsonb;
 
 create table if not exists public.chats (
   id uuid primary key default gen_random_uuid(),

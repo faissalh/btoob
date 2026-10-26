@@ -14,6 +14,8 @@ class RequestsScreen extends StatefulWidget {
   final List<PurchaseRequest>? requests;
   final String? userId;
   final ValueChanged<String>? onContact;
+  final Set<String> favorites;
+  final ValueChanged<String>? onToggleFavorite;
   final Future<void> Function(String)? onDeleteRequest;
   final Map<String, UserProfile> profilesById;
 
@@ -22,6 +24,8 @@ class RequestsScreen extends StatefulWidget {
     this.requests,
     this.userId,
     this.onContact,
+    this.favorites = const {},
+    this.onToggleFavorite,
     this.onDeleteRequest,
     this.profilesById = const {},
   });
@@ -153,7 +157,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                   title: 'لا توجد طلبات شراء',
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 100),
                   itemCount: _filtered.length,
                   itemBuilder: (ctx, i) {
                     final r = _filtered[i];
@@ -179,6 +183,11 @@ class _RequestsScreenState extends State<RequestsScreen> {
                               avatarBase64: profile?.avatarBase64,
                               ownerRole: profile?.role ?? 'مشتري',
                               onContact: widget.onContact,
+                              isSaved: widget.favorites.contains(
+                                'request:${r.id}',
+                              ),
+                              favorites: widget.favorites,
+                              onToggleSaved: widget.onToggleFavorite,
                             ),
                           ),
                         ),

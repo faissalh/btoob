@@ -300,45 +300,49 @@ class _HomeScreenState extends State<HomeScreen>
         .take(4)
         .toList();
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.58,
-        ),
-        itemCount: items.length,
-        itemBuilder: (ctx, i) {
-          final o = items[i];
-          final profile = resolveAccountProfile(
-            widget.profilesById,
-            userId: o.ownerId,
-            name: o.companyName,
-          );
-          final ownerRole =
-              profile?.role ??
-              MockData.getCompanyByName(o.companyName)?.type ??
-              'مورد';
-          return OfferCard(
-            offer: o,
-            avatarBase64: profile?.avatarBase64,
-            ownerRole: ownerRole,
-            isFavorite: widget.favorites.contains(o.id),
-            onFavoriteToggle: () => widget.onToggleFavorite?.call(o.id),
-            onTap: () => Navigator.push(
-              ctx,
-              MaterialPageRoute(
-                builder: (_) => OfferDetailScreen(
-                  offer: o,
-                  onContact: widget.onContact,
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cardWidth = (constraints.maxWidth - 12) / 2;
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: items.map((offer) {
+              final profile = resolveAccountProfile(
+                widget.profilesById,
+                userId: offer.ownerId,
+                name: offer.companyName,
+              );
+              final ownerRole =
+                  profile?.role ??
+                  MockData.getCompanyByName(offer.companyName)?.type ??
+                  'مورد';
+              return SizedBox(
+                width: cardWidth,
+                child: OfferCard(
+                  offer: offer,
                   avatarBase64: profile?.avatarBase64,
                   ownerRole: ownerRole,
+                  isFavorite: widget.favorites.contains(offer.id),
+                  onFavoriteToggle: () =>
+                      widget.onToggleFavorite?.call(offer.id),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => OfferDetailScreen(
+                        offer: offer,
+                        onContact: widget.onContact,
+                        avatarBase64: profile?.avatarBase64,
+                        ownerRole: ownerRole,
+                        isSaved: widget.favorites.contains(offer.id),
+                        favorites: widget.favorites,
+                        onToggleSaved: widget.onToggleFavorite,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            }).toList(),
           );
         },
       ),
@@ -374,6 +378,11 @@ class _HomeScreenState extends State<HomeScreen>
                             onContact: widget.onContact,
                             avatarBase64: profile?.avatarBase64,
                             ownerRole: profile?.role ?? 'مشتري',
+                            isSaved: widget.favorites.contains(
+                              'request:${r.id}',
+                            ),
+                            favorites: widget.favorites,
+                            onToggleSaved: widget.onToggleFavorite,
                           ),
                         ),
                       ),

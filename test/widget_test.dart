@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:b2b_souq/l10n/app_localizations.dart';
 import 'package:b2b_souq/data/local_marketplace_store.dart';
 import 'package:b2b_souq/data/local_user_store.dart';
 import 'package:b2b_souq/widgets/account_avatar.dart';
 import 'package:b2b_souq/widgets/offer_card.dart';
 import 'package:b2b_souq/widgets/post_media_thumbnail.dart';
+import 'package:b2b_souq/widgets/post_card.dart';
+import 'package:b2b_souq/widgets/places_selector.dart';
 import 'package:b2b_souq/widgets/request_card.dart';
 import 'package:b2b_souq/main.dart' show MainShell, SouqApp;
 import 'package:b2b_souq/models/local_message.dart';
@@ -15,14 +18,48 @@ import 'package:b2b_souq/screens/company_detail_screen.dart';
 import 'package:b2b_souq/screens/post_offer_screen.dart';
 import 'package:b2b_souq/screens/post_request_screen.dart';
 import 'package:b2b_souq/screens/private_chat_screen.dart';
+import 'package:b2b_souq/screens/post_detail_screen.dart';
 import 'package:b2b_souq/screens/requests_screen.dart';
 import 'package:b2b_souq/screens/suppliers_screen.dart';
 import 'package:b2b_souq/models/purchase_request.dart';
 import 'package:b2b_souq/models/offer.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+  });
+
+  test('Post places round-trip and legacy records remain readable', () {
+    final offer = Offer.fromJson({
+      'id': 'places-offer',
+      'title': 'عرض',
+      'type': 'منتج',
+      'price': '10',
+      'category': 'أخرى',
+      'countries': ['السعودية'],
+      'companyName': 'شركة',
+      'rating': 4.5,
+      'places': {
+        'السعودية': ['الرياض', 'جدة'],
+      },
+    });
+    expect(offer.places['السعودية'], ['الرياض', 'جدة']);
+    expect(Offer.fromJson({...offer.toJson()}).places, offer.places);
+
+    final legacyRequest = PurchaseRequest.fromJson({
+      'id': 'old-request',
+      'title': 'طلب قديم',
+      'status': 'مفتوح',
+      'buyerName': 'مشتري',
+      'contactPerson': 'مسؤول',
+      'quantity': '10',
+      'budget': '100',
+      'country': 'السعودية',
+      'city': 'الرياض',
+    });
+    expect(legacyRequest.places, isEmpty);
+    expect(legacyRequest.location, 'السعودية · الرياض');
   });
 
   testWidgets('Account avatars distinguish supplier and buyer roles', (
@@ -87,11 +124,7 @@ void main() {
         home: Scaffold(
           body: const Directionality(
             textDirection: TextDirection.rtl,
-            child: PostMediaThumbnail(
-              images: [image, image, image, image],
-              width: 120,
-              height: 100,
-            ),
+            child: PostMediaThumbnail(images: [image, image, image, image]),
           ),
         ),
       ),
@@ -116,16 +149,282 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(
-          body: PostMediaThumbnail(
-            images: ['invalid-base64'],
-            width: 100,
-            height: 100,
+        home: Scaffold(body: PostMediaThumbnail(images: ['invalid-base64'])),
+      ),
+    );
+    expect(find.byIcon(Icons.broken_image_outlined), findsOneWidget);
+  });
+
+  testWidgets('Places can be selected per country or left as all cities', (
+    WidgetTester tester,
+  ) async {
+    var places = <String, List<String>>{};
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: StatefulBuilder(
+          builder: (context, setState) => Scaffold(
+            body: SingleChildScrollView(
+              child: PlacesSelector(
+                countries: const ['السعودية'],
+                places: places,
+                onChanged: (value) => setState(() => places = value),
+              ),
+            ),
           ),
         ),
       ),
     );
+
+    await tester.tap(find.byKey(const ValueKey('place-city-السعودية-الرياض')));
+    await tester.pumpAndSettle();
+    expect(places['السعودية'], ['الرياض']);
+    await tester.tap(find.byKey(const ValueKey('all-cities-السعودية')));
+    await tester.pumpAndSettle();
+    expect(places['السعودية'], isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Single-image details show a counter without thumbnails', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PostDetailScreen(
+          id: 'single-image',
+          isOffer: true,
+          isService: false,
+          title: 'Single image',
+          category: 'General',
+          publisherName: 'Supplier',
+          images: postImageProviders(['invalid image']),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('1/1'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('post-detail-thumbnail-single-image-0')),
+      findsNothing,
+    );
     expect(find.byIcon(Icons.broken_image_outlined), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Profile language setting changes the app direction and locale', (
+    WidgetTester tester,
+  ) async {
+    var locale = const Locale('ar');
+    await tester.pumpWidget(
+      StatefulBuilder(
+        builder: (context, setState) => MaterialApp(
+          locale: locale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MainShell(
+            isDark: false,
+            onDarkToggle: (_) {},
+            onLocaleChanged: (value) => setState(() => locale = value),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حسابي').last);
+    await tester.pumpAndSettle();
+    final languageTile = find.text('اللغة');
+    await tester.ensureVisible(languageTile);
+    await tester.tap(languageTile);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('الإنجليزية').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Language'), findsOneWidget);
+    expect(locale, const Locale('en'));
+    expect(
+      Directionality.of(tester.element(find.byType(MainShell))),
+      TextDirection.ltr,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Post detail supports image carousel and all offer actions', (
+    WidgetTester tester,
+  ) async {
+    const image =
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pWQAAAAASUVORK5CYII=';
+    var contactCount = 0;
+    var saveCount = 0;
+    var shareCount = 0;
+    var publisherCount = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ar'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PostDetailScreen(
+          id: 'detail-offer',
+          isOffer: true,
+          isService: true,
+          title: 'خدمة صيانة',
+          category: 'خدمات',
+          description: 'صيانة دورية للمعدات',
+          value: '100 ريال',
+          minimumOrder: '3 وحدات',
+          countries: const ['السعودية', 'الإمارات'],
+          places: const {
+            'السعودية': ['الرياض'],
+            'الإمارات': [],
+          },
+          publisherName: 'مورد موثق',
+          publisherRole: 'مورد',
+          isVerified: true,
+          rating: 4.8,
+          images: postImageProviders([image, image, image]),
+          isSaved: true,
+          onToggleSaved: () => saveCount++,
+          onShare: () => shareCount++,
+          onContact: () => contactCount++,
+          onSecondaryAction: () => contactCount++,
+          onPublisherTap: () => publisherCount++,
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('1/3'), findsOneWidget);
+    expect(find.text('كل المدن'), findsOneWidget);
+    expect(find.byIcon(Icons.verified), findsOneWidget);
+    final thirdThumbnail = find.byKey(
+      const ValueKey('post-detail-thumbnail-detail-offer-2'),
+    );
+    expect(thirdThumbnail, findsOneWidget);
+    await tester.ensureVisible(thirdThumbnail);
+    await tester.tap(thirdThumbnail);
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+    expect(find.text('3/3'), findsOneWidget);
+
+    final shareButton = find.byTooltip('مشاركة المنشور');
+    await tester.ensureVisible(shareButton);
+    await tester.tap(shareButton);
+    await tester.pump();
+    expect(shareCount, 1);
+    final savedButton = find.byTooltip('إزالة من المحفوظات');
+    await tester.ensureVisible(savedButton);
+    await tester.tap(savedButton);
+    await tester.pump();
+    expect(saveCount, 1);
+    final publisherCard = find.byKey(
+      const ValueKey('post-detail-publisher-detail-offer'),
+    );
+    await tester.ensureVisible(publisherCard);
+    await tester.tap(publisherCard);
+    await tester.pump();
+    expect(publisherCount, 1);
+    final contactButton = find.byKey(const ValueKey('post-detail-contact'));
+    expect(contactButton, findsOneWidget);
+    await tester.tap(contactButton);
+    await tester.pump();
+    await tester.tap(find.text('طلب عرض سعر'));
+    await tester.pump();
+    expect(contactCount, 2);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Request detail without images localizes and keeps actions', (
+    WidgetTester tester,
+  ) async {
+    var actions = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PostDetailScreen(
+          id: 'detail-request',
+          isOffer: false,
+          isService: false,
+          title: 'Need equipment',
+          category: 'Equipment',
+          value: 'Up to 1000',
+          countries: const ['السعودية'],
+          places: const {'السعودية': []},
+          publisherName: 'Purchaser',
+          publisherRole: 'buyer',
+          requestStatus: 'مفتوح',
+          contactPerson: 'Purchasing manager',
+          quantity: '10 units',
+          onContact: () => actions++,
+          onSecondaryAction: () => actions++,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('post-detail-gallery-detail-request')),
+      findsNothing,
+    );
+    expect(find.text('All cities'), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
+    expect(find.text('Contact buyer'), findsOneWidget);
+    expect(find.text('Submit your offer'), findsOneWidget);
+    expect(
+      Directionality.of(tester.element(find.byType(PostDetailScreen))),
+      TextDirection.ltr,
+    );
+    await tester.tap(find.text('Contact buyer'));
+    await tester.pump();
+    await tester.tap(find.text('Submit your offer'));
+    await tester.pump();
+    expect(actions, 2);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Offer without images remains compact and shows publisher data', (
+    WidgetTester tester,
+  ) async {
+    const offer = Offer(
+      id: 'compact-offer',
+      title: 'عرض بلا صور',
+      type: 'خدمة',
+      price: 'حسب الطلب',
+      minOrder: '5 وحدات',
+      category: 'خدمات',
+      countries: ['السعودية'],
+      companyName: 'شركة موثقة',
+      isVerified: true,
+      rating: 4.8,
+    );
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: Center(
+              child: SizedBox(width: 200, child: OfferCard(offer: offer)),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(PostMediaThumbnail), findsNothing);
+    expect(find.byTooltip('خدمة'), findsOneWidget);
+    expect(find.byIcon(Icons.verified), findsOneWidget);
+    expect(find.text('4.8'), findsOneWidget);
+    expect(tester.getSize(find.byType(PostCard)).height, lessThan(280));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Offer and request cards preview images in both directions', (
@@ -163,15 +462,24 @@ void main() {
           home: Directionality(
             textDirection: direction,
             child: Scaffold(
-              body: ListView(
-                children: const [
-                  SizedBox(
-                    width: 180,
-                    height: 300,
-                    child: OfferCard(offer: offer),
-                  ),
-                  SizedBox(width: 360, child: RequestCard(request: request)),
-                ],
+              body: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 180,
+                      child: OfferCard(
+                        offer: offer,
+                        isFavorite: true,
+                        onFavoriteToggle: () {},
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 360,
+                      child: RequestCard(request: request),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -182,52 +490,44 @@ void main() {
     }
 
     await pumpDirection(TextDirection.rtl);
-    expect(
-      find.byKey(const ValueKey('offer-media-preview-offer')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('request-media-preview-request')),
-      findsOneWidget,
-    );
+    const offerMediaKey = ValueKey('post-media-offer-preview-offer');
+    const requestMediaKey = ValueKey('post-media-request-preview-request');
+    expect(find.byKey(offerMediaKey), findsOneWidget);
+    expect(find.byKey(requestMediaKey), findsOneWidget);
     expect(find.text('1/2'), findsNWidgets(2));
-    final rtlImage = tester.getTopLeft(
-      find.byKey(const ValueKey('offer-media-preview-offer')),
-    );
-    final rtlImageSize = tester.getSize(
-      find.byKey(const ValueKey('offer-media-preview-offer')),
-    );
+    final rtlImage = tester.getTopLeft(find.byKey(offerMediaKey));
+    final rtlImageSize = tester.getSize(find.byKey(offerMediaKey));
     final rtlBadge = tester.getCenter(
       find.descendant(
-        of: find.byKey(const ValueKey('offer-media-preview-offer')),
+        of: find.byKey(offerMediaKey),
         matching: find.byKey(const ValueKey('post-media-count-badge')),
       ),
     );
-    final rtlInfo = tester.getTopLeft(
-      find.byKey(const ValueKey('offer-media-info-preview-offer')),
-    );
-    expect(rtlImage.dx, greaterThan(rtlInfo.dx));
+    final rtlTypeIcon = tester.getCenter(find.byTooltip('منتج'));
+    final rtlBookmark = tester.getCenter(find.byIcon(Icons.bookmark));
+    expect(rtlImageSize.width / rtlImageSize.height, closeTo(4 / 3, 0.02));
     expect(rtlBadge.dx, lessThan(rtlImage.dx + rtlImageSize.width / 2));
+    expect(rtlTypeIcon.dx, greaterThan(rtlImage.dx + rtlImageSize.width / 2));
+    expect(rtlBookmark.dx, lessThan(rtlImage.dx + rtlImageSize.width / 2));
     expect(tester.takeException(), isNull);
 
     await pumpDirection(TextDirection.ltr);
-    final ltrImage = tester.getTopLeft(
-      find.byKey(const ValueKey('offer-media-preview-offer')),
-    );
-    final ltrInfo = tester.getTopLeft(
-      find.byKey(const ValueKey('offer-media-info-preview-offer')),
-    );
-    final ltrImageSize = tester.getSize(
-      find.byKey(const ValueKey('offer-media-preview-offer')),
-    );
+    final ltrImage = tester.getTopLeft(find.byKey(offerMediaKey));
+    final ltrImageSize = tester.getSize(find.byKey(offerMediaKey));
     final ltrBadge = tester.getCenter(
       find.descendant(
-        of: find.byKey(const ValueKey('offer-media-preview-offer')),
+        of: find.byKey(offerMediaKey),
         matching: find.byKey(const ValueKey('post-media-count-badge')),
       ),
     );
-    expect(ltrImage.dx, lessThan(ltrInfo.dx));
+    final ltrTypeIcon = tester.getCenter(find.byTooltip('Product'));
+    final ltrBookmark = tester.getCenter(find.byIcon(Icons.bookmark));
     expect(ltrBadge.dx, greaterThan(ltrImage.dx + ltrImageSize.width / 2));
+    expect(ltrTypeIcon.dx, lessThan(ltrImage.dx + ltrImageSize.width / 2));
+    expect(ltrBookmark.dx, greaterThan(ltrImage.dx + ltrImageSize.width / 2));
+    await tester.drag(find.byKey(offerMediaKey), const Offset(-150, 0));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('2/2'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -281,6 +581,14 @@ void main() {
 
     await tester.pumpWidget(
       const MaterialApp(
+        locale: Locale('ar'),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         home: MainShell(isDark: false, onDarkToggle: _ignoreDarkMode),
       ),
     );
@@ -307,7 +615,7 @@ void main() {
       avatar,
     );
 
-    await tester.pageBack();
+    await tester.tap(find.byKey(const ValueKey('post-detail-back')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('الطلبات').last);
     await tester.pumpAndSettle();
@@ -418,7 +726,7 @@ void main() {
     expect(find.byKey(const ValueKey('auth-city-السعودية')), findsOneWidget);
   });
 
-  testWidgets('New account requires contact/location fields and can sign in', (
+  testWidgets('New account can be created without a website and sign in', (
     WidgetTester tester,
   ) async {
     var authenticated = false;
@@ -456,9 +764,6 @@ void main() {
     final emailField = find.byKey(const ValueKey('auth-email'));
     await tester.ensureVisible(emailField);
     await tester.enterText(emailField, 'maha@example.com');
-    final websiteField = find.byKey(const ValueKey('auth-website'));
-    await tester.ensureVisible(websiteField);
-    await tester.enterText(websiteField, 'example.com');
     tester.testTextInput.hide();
     await tester.pumpAndSettle();
     final createButton = find.byType(ElevatedButton).last;
@@ -535,6 +840,14 @@ void main() {
     await preferences.setBool('demo_account_logged_in', true);
     await tester.pumpWidget(
       const MaterialApp(
+        locale: Locale('ar'),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         home: MainShell(isDark: false, onDarkToggle: _ignoreDarkMode),
       ),
     );
@@ -1091,10 +1404,18 @@ void main() {
     await tester.tap(find.text('الإمارات').last);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('request-city-الإمارات')));
+    final cityOptions = find.byKey(const ValueKey('request-places-الإمارات'));
+    await tester.ensureVisible(cityOptions);
+    await tester.tap(cityOptions);
     await tester.pumpAndSettle();
-    expect(find.text('أبوظبي'), findsOneWidget);
-    expect(find.text('دبي'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('place-city-الإمارات-أبوظبي')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('place-city-الإمارات-دبي')),
+      findsOneWidget,
+    );
     expect(find.text('الرياض'), findsNothing);
   });
 
@@ -1218,12 +1539,10 @@ void main() {
     await tester.enterText(fields.at(1), '25 وحدة');
     await tester.enterText(fields.at(2), '5000 ريال');
     await tester.enterText(fields.at(3), 'تفاصيل الطلب التجريبي');
-    final cityPicker = find.byKey(const ValueKey('request-city-السعودية'));
+    final cityPicker = find.byKey(const ValueKey('place-city-السعودية-الرياض'));
     await tester.ensureVisible(cityPicker);
     await tester.pumpAndSettle();
     await tester.tap(cityPicker);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('الرياض').last);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('نشر الطلب'));
     await tester.tap(find.text('نشر الطلب'));
@@ -1256,13 +1575,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('رمل وحصى مكسر — توريد يومي'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('تواصل مع المورد'),
-      240,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('تواصل مع المورد'));
+    expect(find.byType(PostDetailScreen), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('post-detail-contact')));
     await tester.pumpAndSettle();
     expect(find.text('الرمال والحصى للإعمار'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat-attach')), findsOneWidget);
@@ -1277,7 +1591,7 @@ void main() {
 
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.pageBack();
+    await tester.tap(find.byKey(const ValueKey('post-detail-back')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('حسابي'));
     await tester.pumpAndSettle();

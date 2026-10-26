@@ -182,14 +182,8 @@ class _OffersScreenState extends State<OffersScreen> {
                   title: 'لا توجد نتائج',
                   subtitle: 'جرب تغيير كلمة البحث أو الفئة',
                 )
-              : GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.58,
-                  ),
+              : ListView.builder(
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 100),
                   itemCount: _filtered.length,
                   itemBuilder: (ctx, i) {
                     final o = _filtered[i];
@@ -198,31 +192,37 @@ class _OffersScreenState extends State<OffersScreen> {
                       userId: o.ownerId,
                       name: o.companyName,
                     );
-                    return OfferCard(
-                      offer: o,
-                      avatarBase64: profile?.avatarBase64,
-                      ownerRole:
-                          profile?.role ??
-                          MockData.getCompanyByName(o.companyName)?.type ??
-                          'مورد',
-                      isFavorite: widget.favorites.contains(o.id),
-                      onFavoriteToggle: () =>
-                          widget.onToggleFavorite?.call(o.id),
-                      onDelete: widget.userId != null
-                          ? () => _confirmDelete(o)
-                          : null,
-                      onTap: () => Navigator.push(
-                        ctx,
-                        MaterialPageRoute(
-                          builder: (_) => OfferDetailScreen(
-                            offer: o,
-                            avatarBase64: profile?.avatarBase64,
-                            ownerRole:
-                                profile?.role ??
-                                MockData.getCompanyByName(o.companyName)
-                                    ?.type ??
-                                'مورد',
-                            onContact: widget.onContact,
+                    return Padding(
+                      padding: const EdgeInsetsDirectional.only(bottom: 12),
+                      child: OfferCard(
+                        offer: o,
+                        avatarBase64: profile?.avatarBase64,
+                        ownerRole:
+                            profile?.role ??
+                            MockData.getCompanyByName(o.companyName)?.type ??
+                            'مورد',
+                        isFavorite: widget.favorites.contains(o.id),
+                        onFavoriteToggle: () =>
+                            widget.onToggleFavorite?.call(o.id),
+                        onDelete: widget.userId != null
+                            ? () => _confirmDelete(o)
+                            : null,
+                        onTap: () => Navigator.push(
+                          ctx,
+                          MaterialPageRoute(
+                            builder: (_) => OfferDetailScreen(
+                              offer: o,
+                              avatarBase64: profile?.avatarBase64,
+                              ownerRole:
+                                  profile?.role ??
+                                  MockData.getCompanyByName(o.companyName)
+                                      ?.type ??
+                                  'مورد',
+                              onContact: widget.onContact,
+                              isSaved: widget.favorites.contains(o.id),
+                              favorites: widget.favorites,
+                              onToggleSaved: widget.onToggleFavorite,
+                            ),
                           ),
                         ),
                       ),

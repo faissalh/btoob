@@ -8,6 +8,7 @@ class PurchaseRequest {
   final String budget;
   final String country;
   final String city;
+  final Map<String, List<String>> places;
   final String? description;
   final String? deadline;
   final String? category;
@@ -24,6 +25,7 @@ class PurchaseRequest {
     required this.budget,
     required this.country,
     required this.city,
+    this.places = const {},
     this.description,
     this.deadline,
     this.category,
@@ -31,7 +33,7 @@ class PurchaseRequest {
     this.imageBase64 = const [],
   });
 
-  String get location => '$country · $city';
+  String get location => city.isEmpty ? country : '$country · $city';
 
   Map<String, Object?> toJson() => {
     'id': id,
@@ -43,6 +45,7 @@ class PurchaseRequest {
     'budget': budget,
     'country': country,
     'city': city,
+    'places': places,
     'description': description,
     'deadline': deadline,
     'category': category,
@@ -61,10 +64,20 @@ class PurchaseRequest {
         budget: json['budget']! as String,
         country: json['country']! as String,
         city: json['city']! as String,
+        places: _decodePlaces(json['places']),
         description: json['description'] as String?,
         deadline: json['deadline'] as String?,
         category: json['category'] as String?,
         ownerId: json['ownerId'] as String?,
         imageBase64: (json['imageBase64'] as List?)?.cast<String>() ?? const [],
       );
+}
+
+Map<String, List<String>> _decodePlaces(Object? value) {
+  if (value is! Map) return const {};
+  return {
+    for (final entry in value.entries)
+      if (entry.key is String && entry.value is List)
+        entry.key as String: (entry.value as List).whereType<String>().toList(),
+  };
 }

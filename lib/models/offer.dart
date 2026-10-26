@@ -6,6 +6,7 @@ class Offer {
   final String? minOrder;
   final String category;
   final List<String> countries;
+  final Map<String, List<String>> places;
   final String companyName;
   final bool isVerified;
   final double rating;
@@ -24,6 +25,7 @@ class Offer {
     this.minOrder,
     required this.category,
     required this.countries,
+    this.places = const {},
     required this.companyName,
     this.isVerified = false,
     required this.rating,
@@ -45,6 +47,7 @@ class Offer {
     'minOrder': minOrder,
     'category': category,
     'countries': countries,
+    'places': places,
     'companyName': companyName,
     'isVerified': isVerified,
     'rating': rating,
@@ -64,6 +67,7 @@ class Offer {
     minOrder: json['minOrder'] as String?,
     category: json['category']! as String,
     countries: (json['countries']! as List).cast<String>(),
+    places: _decodePlaces(json['places']),
     companyName: json['companyName']! as String,
     isVerified: json['isVerified'] as bool? ?? false,
     rating: (json['rating'] as num?)?.toDouble() ?? 0,
@@ -74,4 +78,13 @@ class Offer {
     ownerId: json['ownerId'] as String?,
     imageBase64: (json['imageBase64'] as List?)?.cast<String>() ?? const [],
   );
+}
+
+Map<String, List<String>> _decodePlaces(Object? value) {
+  if (value is! Map) return const {};
+  return {
+    for (final entry in value.entries)
+      if (entry.key is String && entry.value is List)
+        entry.key as String: (entry.value as List).whereType<String>().toList(),
+  };
 }

@@ -9,6 +9,15 @@ import '../models/purchase_request.dart';
 import 'local_marketplace_store.dart';
 import 'supabase_config.dart';
 
+Map<String, List<String>> _placesFromRow(Object? value) {
+  if (value is! Map) return const {};
+  return {
+    for (final entry in value.entries)
+      if (entry.key is String && entry.value is List)
+        entry.key as String: (entry.value as List).whereType<String>().toList(),
+  };
+}
+
 class SupabaseMarketplaceStore extends LocalMarketplaceStore {
   SupabaseClient get _client => SupabaseConfig.client;
   String get _userId {
@@ -33,6 +42,7 @@ class SupabaseMarketplaceStore extends LocalMarketplaceStore {
         minOrder: row['min_order'] as String?,
         category: row['category'] as String,
         countries: (row['countries'] as List).cast<String>(),
+        places: _placesFromRow(row['places']),
         companyName: row['company_name'] as String,
         rating: 0,
         description: row['description'] as String?,
@@ -67,6 +77,7 @@ class SupabaseMarketplaceStore extends LocalMarketplaceStore {
         budget: row['budget'] as String,
         country: row['country'] as String,
         city: row['city'] as String,
+        places: _placesFromRow(row['places']),
         description: row['description'] as String?,
         deadline: row['deadline'] as String?,
         category: row['category'] as String?,
@@ -152,6 +163,7 @@ class SupabaseMarketplaceStore extends LocalMarketplaceStore {
         'min_order': offer.minOrder,
         'category': offer.category,
         'countries': offer.countries,
+        'places': offer.places,
         'company_name': offer.companyName,
         'description': offer.description,
         'details': offer.details,
@@ -182,6 +194,7 @@ class SupabaseMarketplaceStore extends LocalMarketplaceStore {
         'budget': request.budget,
         'country': request.country,
         'city': request.city,
+        'places': request.places,
         'description': request.description,
         'deadline': request.deadline,
         'category': request.category,

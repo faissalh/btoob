@@ -13,11 +13,15 @@ import '../widgets/account_avatar.dart';
 class SuppliersScreen extends StatefulWidget {
   final ValueChanged<String>? onContact;
   final Map<String, UserProfile> profilesById;
+  final Set<String> favorites;
+  final ValueChanged<String>? onToggleFavorite;
 
   const SuppliersScreen({
     super.key,
     this.onContact,
     this.profilesById = const {},
+    this.favorites = const {},
+    this.onToggleFavorite,
   });
   @override
   State<SuppliersScreen> createState() => _SuppliersScreenState();
@@ -158,6 +162,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                               company: c,
                               onContact: widget.onContact,
                               avatarBase64: profile?.avatarBase64,
+                              favorites: widget.favorites,
+                              onToggleFavorite: widget.onToggleFavorite,
                             ),
                           ),
                         ),

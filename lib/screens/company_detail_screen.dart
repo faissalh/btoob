@@ -11,12 +11,16 @@ class CompanyDetailScreen extends StatelessWidget {
   final Company company;
   final ValueChanged<String>? onContact;
   final String? avatarBase64;
+  final Set<String> favorites;
+  final ValueChanged<String>? onToggleFavorite;
 
   const CompanyDetailScreen({
     super.key,
     required this.company,
     this.onContact,
     this.avatarBase64,
+    this.favorites = const {},
+    this.onToggleFavorite,
   });
 
   @override
@@ -262,34 +266,36 @@ class CompanyDetailScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 0.68,
-                          ),
-                      itemCount: companyOffers.length,
-                      itemBuilder: (ctx, i) {
-                        final o = companyOffers[i];
-                        return OfferCard(
-                          offer: o,
-                          avatarBase64: avatarBase64,
-                          ownerRole: company.type,
-                          onTap: () => Navigator.push(
-                            ctx,
-                            MaterialPageRoute(
-                              builder: (_) => OfferDetailScreen(
-                                offer: o,
-                                onContact: onContact,
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final cardWidth = (constraints.maxWidth - 12) / 2;
+                        return Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: companyOffers.map((offer) {
+                            return SizedBox(
+                              width: cardWidth,
+                              child: OfferCard(
+                                offer: offer,
                                 avatarBase64: avatarBase64,
                                 ownerRole: company.type,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => OfferDetailScreen(
+                                      offer: offer,
+                                      onContact: onContact,
+                                      avatarBase64: avatarBase64,
+                                      ownerRole: company.type,
+                                      isSaved: favorites.contains(offer.id),
+                                      favorites: favorites,
+                                      onToggleSaved: onToggleFavorite,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          }).toList(),
                         );
                       },
                     ),

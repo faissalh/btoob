@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../data/gulf_locations.dart';
 import '../models/purchase_request.dart';
+import '../widgets/places_selector.dart';
 
 class PostRequestScreen extends StatefulWidget {
   final String ownerId;
@@ -30,6 +31,7 @@ class _PostRequestScreenState extends State<PostRequestScreen> {
   final _descC = TextEditingController();
   String _country = 'السعودية';
   String? _city;
+  Map<String, List<String>> _places = {};
   String _cat = 'مواد بناء';
   DateTime? _deadline;
   bool _submitting = false;
@@ -109,7 +111,10 @@ class _PostRequestScreenState extends State<PostRequestScreen> {
         quantity: _qtyC.text.trim(),
         budget: _budgetC.text.trim(),
         country: _country,
-        city: _city!,
+        city: _city ?? '',
+        places: {
+          _country: List.unmodifiable(_places[_country] ?? const <String>[]),
+        },
         description: _descC.text.trim(),
         deadline: _deadline == null
             ? null
@@ -223,24 +228,21 @@ class _PostRequestScreenState extends State<PostRequestScreen> {
                 onChanged: (country) => setState(() {
                   _country = country!;
                   _city = null;
+                  _places = {};
                 }),
               ),
               const SizedBox(height: 20),
-              _label('المدينة', fgColor),
+              _label('المدينة (اختياري)', fgColor),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                key: ValueKey('request-city-$_country'),
-                initialValue: _city,
-                hint: const Text('اختر المدينة'),
-                items: GulfLocations.citiesByCountry[_country]!
-                    .map(
-                      (city) =>
-                          DropdownMenuItem(value: city, child: Text(city)),
-                    )
-                    .toList(),
-                onChanged: (city) => setState(() => _city = city),
-                validator: (city) =>
-                    city == null ? 'يرجى اختيار المدينة' : null,
+              PlacesSelector(
+                key: ValueKey('request-places-$_country'),
+                countries: [_country],
+                places: _places,
+                onChanged: (places) => setState(() {
+                  _places = places;
+                  final cities = _places[_country] ?? const <String>[];
+                  _city = cities.isEmpty ? null : cities.first;
+                }),
               ),
               const SizedBox(height: 20),
               _label('الميزانية', fgColor),

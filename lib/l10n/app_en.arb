@@ -1,0 +1,79 @@
+{
+  "@@locale": "en",
+  "productType": "Product",
+  "serviceType": "Service",
+  "savePost": "Save post",
+  "removeSavedPost": "Remove from saved posts",
+  "deleteOffer": "Delete offer",
+  "deleteRequest": "Delete purchase request",
+  "verifiedPublisher": "Verified publisher",
+  "minimumOrder": "Minimum order: {value}",
+  "@minimumOrder": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "requestQuantity": "Quantity: {value}",
+  "@requestQuantity": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "requestDeadline": "Deadline: {value}",
+  "@requestDeadline": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "openRequest": "Open",
+  "closedRequest": "Closed",
+  "ratingUnavailable": "—",
+  "offerDetailsTitle": "Offer details",
+  "requestDetailsTitle": "Purchase request details",
+  "offerDescription": "Offer description",
+  "requestDescription": "Request details",
+  "categoryLabel": "Category",
+  "priceLabel": "Price",
+  "budgetLabel": "Budget",
+  "minimumOrderLabel": "Minimum order",
+  "featuresLabel": "Features",
+  "targetPlacesLabel": "Target countries and cities",
+  "supplierLabel": "Supplier",
+  "buyerLabel": "Buyer",
+  "contactPersonLabel": "Contact person",
+  "quantityLabel": "Quantity",
+  "locationLabel": "Location",
+  "deadlineLabel": "Deadline",
+  "allCities": "All cities",
+  "contactSupplier": "Contact supplier",
+  "requestQuote": "Request a quote",
+  "makeOffer": "Submit your offer",
+  "contactBuyer": "Contact buyer",
+  "sharePost": "Share post",
+  "shareOfferCopied": "Offer link copied",
+  "shareRequestCopied": "Request link copied",
+  "savedPostMessage": "Post saved",
+  "removedSavedPostMessage": "Post removed from saved items",
+  "productDetailsLabel": "Product",
+  "serviceDetailsLabel": "Service",
+  "openRequestStatus": "Open",
+  "closedRequestStatus": "Closed",
+  "citiesPickerLabel": "Cities in {country}",
+  "@citiesPickerLabel": {
+    "placeholders": {
+      "country": {
+        "type": "String"
+      }
+    }
+  },
+  "optionalCitiesHelp": "Choose specific cities or leave all cities selected",
+  "languageLabel": "Language",
+  "arabicLanguageName": "العربية",
+  "englishLanguageName": "English"
+}

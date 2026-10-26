@@ -6,8 +6,10 @@ import 'package:image_picker/image_picker.dart';
 
 import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
+import '../data/gulf_locations.dart';
 import '../models/offer.dart';
 import '../widgets/location_filter.dart';
+import '../widgets/places_selector.dart';
 
 class PostOfferScreen extends StatefulWidget {
   final String ownerId;
@@ -33,6 +35,7 @@ class _PostOfferScreenState extends State<PostOfferScreen> {
   String _cat = 'مواد بناء';
   Set<String> _countries = {};
   Set<String> _cities = {};
+  Map<String, List<String>> _places = {};
   List<XFile> _images = [];
   bool _submitting = false;
 
@@ -71,6 +74,10 @@ class _PostOfferScreenState extends State<PostOfferScreen> {
         minOrder: _minC.text.trim().isEmpty ? null : _minC.text.trim(),
         category: _cat,
         countries: _countries.toList(),
+        places: {
+          for (final country in _countries)
+            country: List.unmodifiable(_places[country] ?? const <String>[]),
+        },
         companyName: widget.ownerName,
         rating: 0,
         description: _descC.text.trim(),
@@ -205,7 +212,23 @@ class _PostOfferScreenState extends State<PostOfferScreen> {
                 onChanged: (selection) => setState(() {
                   _countries = selection.countries;
                   _cities = selection.cities;
+                  _places = {
+                    for (final country in selection.countries)
+                      country: List.unmodifiable(
+                        (GulfLocations.citiesByCountry[country] ??
+                                const <String>[])
+                            .where(selection.cities.contains)
+                            .toList(),
+                      ),
+                  };
                 }),
+              ),
+              const SizedBox(height: 10),
+              PlacesSelector(
+                key: ValueKey('post-offer-places-${_countries.join('-')}'),
+                countries: _countries.toList(),
+                places: _places,
+                onChanged: (places) => setState(() => _places = places),
               ),
               const SizedBox(height: 20),
               _label('وصف العرض', fgColor),

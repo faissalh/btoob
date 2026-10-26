@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'l10n/app_localizations.dart';
+import 'l10n/post_card_localizations.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
@@ -67,6 +70,7 @@ class SouqApp extends StatefulWidget {
 class _SouqAppState extends State<SouqApp> {
   bool _isDark = false;
   bool _showSplash = true;
+  Locale _locale = const Locale('ar');
 
   @override
   Widget build(BuildContext context) {
@@ -76,15 +80,21 @@ class _SouqAppState extends State<SouqApp> {
       theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
       themeMode: _isDark ? ThemeMode.dark : ThemeMode.light,
-      builder: (context, child) {
-        return Directionality(textDirection: TextDirection.rtl, child: child!);
-      },
+      locale: _locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       routes: const {},
       home: _showSplash
           ? SplashScreen(onComplete: () => setState(() => _showSplash = false))
           : MainShell(
               isDark: _isDark,
               onDarkToggle: (v) => setState(() => _isDark = v),
+              onLocaleChanged: (locale) => setState(() => _locale = locale),
             ),
     );
   }
@@ -93,10 +103,12 @@ class _SouqAppState extends State<SouqApp> {
 class MainShell extends StatefulWidget {
   final bool isDark;
   final ValueChanged<bool> onDarkToggle;
+  final ValueChanged<Locale>? onLocaleChanged;
   const MainShell({
     super.key,
     required this.isDark,
     required this.onDarkToggle,
+    this.onLocaleChanged,
   });
 
   @override
@@ -518,16 +530,18 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _toggleFavorite(String id) {
+    final localizations = postCardLocalizations(context);
     setState(() {
       if (_favorites.contains(id)) {
         _favorites.remove(id);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إزالة العرض من المحفوظات')),
+          SnackBar(content: Text(localizations.removedSavedPostMessage)),
         );
       } else {
         _favorites.add(id);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('تم حفظ العرض ✓')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(localizations.savedPostMessage)));
       }
     });
   }
@@ -563,13 +577,22 @@ class _MainShellState extends State<MainShell> {
         requests: _requests,
         userId: _showMyRequests ? _userId : null,
         onContact: _sendMessage,
+        favorites: _favorites,
+        onToggleFavorite: _toggleFavorite,
         onDeleteRequest: _showMyRequests ? _deleteRequest : null,
         profilesById: _profilesById,
       ),
-      SuppliersScreen(onContact: _sendMessage, profilesById: _profilesById),
+      SuppliersScreen(
+        onContact: _sendMessage,
+        profilesById: _profilesById,
+        favorites: _favorites,
+        onToggleFavorite: _toggleFavorite,
+      ),
       ProfileScreen(
         isDarkMode: widget.isDark,
         onDarkModeToggle: widget.onDarkToggle,
+        locale: Localizations.localeOf(context),
+        onLocaleChanged: widget.onLocaleChanged,
         isLoggedIn: _isLoggedIn,
         userProfile: _currentUser,
         onLogin: _login,
