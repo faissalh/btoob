@@ -1,0 +1,8 @@
+{
+  "name": "b2b-souq-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "bash ./scripts/build_web.sh"
+  }
+}
