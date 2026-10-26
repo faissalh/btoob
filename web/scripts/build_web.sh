@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "${PROJECT_ROOT}"
+
 FLUTTER_VERSION="3.47.8"
 
 if command -v flutter >/dev/null 2>&1; then

@@ -23,9 +23,10 @@ in Supabase.
 
 - Create a **Static Site** from the GitHub repository and select the `main`
   branch.
-- Set the root folder to `.` and the install command to `npm install`.
-- Set the build command to `npm run build` and the output folder to
-  `build/web`.
+- Keep the repository root as the root folder (`.`).
+- Set the install command to `npm --prefix web install` and the build command
+  to `npm --prefix web run build`.
+- Set the output folder to `build/web`.
 - The build script uses Flutter 3.47.8 when Flutter is not already installed
   in the build environment. It resolves the locked Dart dependencies and builds
   the release web app.
