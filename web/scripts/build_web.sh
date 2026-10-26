@@ -27,3 +27,7 @@ fi
 
 "${FLUTTER_BIN}" pub get --enforce-lockfile
 "${FLUTTER_BIN}" build web --release --no-pub
+
+rm -rf web/dist
+mkdir -p web/dist
+cp -R build/web/. web/dist/
