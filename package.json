@@ -1,0 +1,9 @@
+{
+  "name": "b2b-souq-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build wrapper for deploying the Flutter web app on Node-based hosts.",
+  "scripts": {
+    "build": "bash scripts/build_web.sh"
+  }
+}
